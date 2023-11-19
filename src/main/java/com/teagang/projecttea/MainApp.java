@@ -56,7 +56,7 @@ public class MainApp extends Application {
     private final TextField[][] resultFields = new TextField[MAX_SIZE][MAX_SIZE];
 
     private final Random random = new Random();
-    boolean inResultsView = false;
+    private boolean inResultsView = false, inStepsView = false;
     int matrixSize = 5;
 
     private void showAlert() {
@@ -68,45 +68,37 @@ public class MainApp extends Application {
         missingValuesAlert.show();
     }
 
-    private void attemptSolve(String[][] data) throws Exception {
-        try {
-            Solver solver = new Solver();
-            String[][] resultData = solver.solveInverse(data);
+    private void attemptSolve(String[][] data) throws SingularMatrixException {
+        Solver solver = new Solver();
+        String[][] resultData = solver.solveInverse(data);
 
-            for (int i = 0; i < matrixSize; i++) {
-                for (int j = 0; j < matrixSize; j++) {
-                    resultFields[i][j].setText(resultData[i][j]);
-                }
+        for (int i = 0; i < matrixSize; i++) {
+            for (int j = 0; j < matrixSize; j++) {
+                resultFields[i][j].setText(resultData[i][j]);
             }
-        } catch (SingularMatrixException e) {
-            showAlert();
         }
-
-//        Solver solver = new Solver();
-//
-//        if (solver.isSingular(data)) {
-//            showAlert();
-//            throw new Exception();
-//        }
-//
-//        double[][] resultData = solver.solveInverse(data);
-//
-//        for (int i = 0; i < matrixSize; i++) {
-//            for (int j = 0; j < matrixSize; j++) {
-//                resultFields[i][j].setText(Double.toString(resultData[i][j]));
-//            }
-//        }
     }
 
-    private void handleCalcBtn() {
+    private boolean process() {
         String[][] data = new String[matrixSize][matrixSize];
 
         try {
             checkEmptyFields(data);
-            attemptSolve(data);
         } catch (Exception e) {
-            return;
+            return true;
         }
+
+        try {
+            attemptSolve(data);
+        } catch (SingularMatrixException e) {
+            showAlert();
+            return true;
+        }
+        return false;
+    }
+
+    private void handleCalcBtn() {
+        if (process()) return;
 
         if (inResultsView) {
             Animation anim = Animations.flash(resultMatrix);
@@ -133,14 +125,7 @@ public class MainApp extends Application {
             return;
         }
 
-        String[][] data = new String[matrixSize][matrixSize];
-
-        try {
-            checkEmptyFields(data);
-            attemptSolve(data);
-        } catch (Exception e) {
-            return;
-        }
+        if (process()) return;
 
         if (inResultsView) {
             Animation anim = Animations.flash(resultMatrix);
@@ -240,29 +225,29 @@ public class MainApp extends Application {
             return;
         }
 
-        Notification notif = new Notification(
+        Notification notification = new Notification(
                 "You are entering an invalid input.",
                 new FontIcon(Material2OutlinedAL.HELP_OUTLINE)
         );
-        notif.getStyleClass().addAll(Styles.ELEVATED_1, Styles.DANGER);
-        notif.setPrefHeight(Region.USE_PREF_SIZE);
-        notif.setMaxHeight(Region.USE_PREF_SIZE);
+        notification.getStyleClass().addAll(Styles.ELEVATED_1, Styles.DANGER);
+        notification.setPrefHeight(Region.USE_PREF_SIZE);
+        notification.setMaxHeight(Region.USE_PREF_SIZE);
 
-        StackPane.setAlignment(notif, Pos.TOP_RIGHT);
-        StackPane.setMargin(notif, new Insets(10, 10, 0, 0));
+        StackPane.setAlignment(notification, Pos.TOP_RIGHT);
+        StackPane.setMargin(notification, new Insets(10, 10, 0, 0));
 
-        Animation openAnim = Animations.slideInDown(notif, Duration.millis(250));
-        if (!root.getChildren().contains(notif)) {
-            root.getChildren().add(notif);
+        Animation openAnim = Animations.slideInDown(notification, Duration.millis(250));
+        if (!root.getChildren().contains(notification)) {
+            root.getChildren().add(notification);
         }
         openAnim.playFromStart();
 
-        notif.setOnClose(event -> {
-            Animation closeAnim = Animations.slideOutUp(notif, Duration.millis(250));
-            closeAnim.setOnFinished(actionEvent -> root.getChildren().remove(notif));
+        notification.setOnClose(event -> {
+            Animation closeAnim = Animations.slideOutUp(notification, Duration.millis(250));
+            closeAnim.setOnFinished(actionEvent -> root.getChildren().remove(notification));
             closeAnim.playFromStart();
         });
-        prevNotification = notif;
+        prevNotification = notification;
     }
 
     private void populateWithTextFields(GridPane pane) {
@@ -454,8 +439,6 @@ public class MainApp extends Application {
             }
         }
     }
-
-    private boolean inStepsView = false;
 
     private void handleSolutionBtn() {
         if (!inStepsView) {
