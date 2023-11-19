@@ -23,7 +23,6 @@ import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.apache.commons.math3.linear.SingularMatrixException;
-import org.apache.commons.math3.util.Precision;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.material2.Material2AL;
 import org.kordamp.ikonli.material2.Material2MZ;
@@ -121,11 +120,12 @@ public class MainApp extends Application {
     private void handleRandomBtn() {
         for (int i = 0; i < matrixSize; i++) {
             for (int j = 0; j < matrixSize; j++) {
-                int min = -999, max = 999, decimalPlaces = 5;
-                double range = max - min;
-                double value = random.nextDouble() * range + min;
-                double result = Precision.round(value, decimalPlaces);
-                inputEntries[i][j].setText(Double.toString(result));
+                // Generate a random number between -99 and 99
+                double value = -99 + (198 * random.nextDouble());
+
+                // Round to 2 decimal places
+                String formattedValue = String.format("%.2f", value);
+                inputEntries[i][j].setText(formattedValue);
             }
         }
 
@@ -147,6 +147,7 @@ public class MainApp extends Application {
             anim.playFromStart();
         }
     }
+
 
     private void handleClearBtn() {
         for (TextField[] fieldList : inputEntries) {

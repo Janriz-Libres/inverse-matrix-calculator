@@ -131,9 +131,8 @@ public class Solver {
         double[][] invertedMatrix = new double[n][n];
         for (int i = 0; i < n; i++) {
             System.arraycopy(augmentedMatrix[i], n, invertedMatrix[i], 0, n);
-//            for (int j = 0; j < n; j++) {
-//                invertedMatrix[i][j] = augmentedMatrix[i][j + n];
-//            }
+
+
         }
 
         return invertedMatrix;
