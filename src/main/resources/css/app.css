@@ -1,0 +1,8 @@
+@font-face {
+    src: url('../fonts/Inter.ttf');
+}
+
+.root {
+    -fx-font-family: 'Inter';
+}
+
