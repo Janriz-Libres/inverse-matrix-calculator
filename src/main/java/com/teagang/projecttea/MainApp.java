@@ -69,19 +69,34 @@ public class MainApp extends Application {
         missingValuesAlert.show();
     }
 
-    private void attemptSolve(String[][] data) {
+    private void attemptSolve(String[][] data) throws Exception {
         try {
             Solver solver = new Solver();
-            double[][] resultData = solver.solveInverse(data);
+            String[][] resultData = solver.solveInverse(data);
 
             for (int i = 0; i < matrixSize; i++) {
                 for (int j = 0; j < matrixSize; j++) {
-                    resultFields[i][j].setText(Double.toString(resultData[i][j]));
+                    resultFields[i][j].setText(resultData[i][j]);
                 }
             }
         } catch (SingularMatrixException e) {
             showAlert();
         }
+
+//        Solver solver = new Solver();
+//
+//        if (solver.isSingular(data)) {
+//            showAlert();
+//            throw new Exception();
+//        }
+//
+//        double[][] resultData = solver.solveInverse(data);
+//
+//        for (int i = 0; i < matrixSize; i++) {
+//            for (int j = 0; j < matrixSize; j++) {
+//                resultFields[i][j].setText(Double.toString(resultData[i][j]));
+//            }
+//        }
     }
 
     private void handleCalcBtn() {
@@ -89,11 +104,10 @@ public class MainApp extends Application {
 
         try {
             checkEmptyFields(data);
+            attemptSolve(data);
         } catch (Exception e) {
             return;
         }
-
-        attemptSolve(data);
 
         if (inResultsView) {
             Animation anim = Animations.flash(resultMatrix);
@@ -123,11 +137,10 @@ public class MainApp extends Application {
 
         try {
             checkEmptyFields(data);
+            attemptSolve(data);
         } catch (Exception e) {
             return;
         }
-
-        attemptSolve(data);
 
         if (inResultsView) {
             Animation anim = Animations.flash(resultMatrix);
