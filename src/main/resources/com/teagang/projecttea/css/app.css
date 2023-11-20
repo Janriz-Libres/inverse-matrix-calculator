@@ -1,0 +1,19 @@
+@font-face {
+    src: url('../fonts/Inter.ttf');
+}
+
+.root {
+    -fx-font-family: 'Inter';
+}
+
+.dark {
+    -fx-background-color: #232730;
+}
+
+.light {
+    -fx-background-color: #e5e9f0;
+}
+
+.sep-light {
+    -fx-background-color: #d0d7de;
+}
