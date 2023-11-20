@@ -45,7 +45,6 @@ public class MainApp extends Application {
     private final StackPane root = new StackPane();
     private final VBox mainPane = new VBox();
     private final HBox controlContainer = new HBox();
-    private final Accordion solutionPanel = new Accordion();
 
     private final FontIcon arrowIcon = new FontIcon(Material2AL.ARROW_FORWARD);
     private final VBox inputBox = new VBox();
@@ -54,15 +53,19 @@ public class MainApp extends Application {
     private final Label inputLabel = new Label();
     private final GridPane inputMatrix = new GridPane();
     private final GridPane resultMatrix = new GridPane();
-
-    private final Button solutionButton = new Button("Show Solution", new FontIcon(Material2MZ.REMOVE_RED_EYE));
     private Notification prevNotification = null;
+
+    private final HBox navbar = new HBox();
+    private final HBox contentHBox = new HBox();
+    private final HBox botSection = new HBox();
+    private final Separator sep1 = new Separator(Orientation.HORIZONTAL);
+    private final Separator sep2 = new Separator(Orientation.HORIZONTAL);
 
     private final TextField[][] inputEntries = new TextField[MAX_SIZE][MAX_SIZE];
     private final TextField[][] resultFields = new TextField[MAX_SIZE][MAX_SIZE];
 
     private final Random random = new Random();
-    private boolean inResultsView = false, inStepsView = false;
+    private boolean inResultsView = false;
     private int matrixSize = 5;
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -165,9 +168,6 @@ public class MainApp extends Application {
             }, 100, TimeUnit.MILLISECONDS);
         });
         anim5.playFromStart();
-
-        solutionButton.setVisible(false);
-        solutionButton.setManaged(false);
     }
 
     private void handleClearBtn() {
@@ -183,25 +183,45 @@ public class MainApp extends Application {
 
         updateUIOnClear();
         inResultsView = false;
-        inStepsView = false;
     }
 
     private void initNavBar() {
         ToggleSwitch darkToggle = new ToggleSwitch();
         darkToggle.setText("Dark Mode");
-        darkToggle.setSelected(true);
+        darkToggle.setSelected(false);
+        darkToggle.setFocusTraversable(false);
         darkToggle.selectedProperty().addListener((obs, old, val) -> {
+            String toAdd = "", toRemove = "";
+
             if (val) {
                 javafx.application.Application.setUserAgentStylesheet(new NordDark().getUserAgentStylesheet());
+                toAdd = "dark";
+                toRemove = "light";
+
+                contentHBox.getStyleClass().remove("light");
+                sep1.getStyleClass().remove("sep-light");
+                sep2.getStyleClass().remove("sep-light");
             } else {
                 javafx.application.Application.setUserAgentStylesheet(new NordLight().getUserAgentStylesheet());
+                toAdd = "light";
+                toRemove = "dark";
+
+                contentHBox.getStyleClass().add("light");
+                sep1.getStyleClass().add("sep-light");
+                sep2.getStyleClass().add("sep-light");
             }
+
+            navbar.getStyleClass().remove(toRemove);
+            botSection.getStyleClass().remove(toRemove);
+
+            navbar.getStyleClass().add(toAdd);
+            botSection.getStyleClass().add(toAdd);
         });
 
-        HBox navbar = new HBox();
         navbar.setAlignment(Pos.CENTER_RIGHT);
-        navbar.setPadding(new Insets(10, 10, 0, 0));
-        navbar.getChildren().addAll(darkToggle);
+        navbar.setPadding(new Insets(10, 10, 10, 0));
+        navbar.getStyleClass().add("light");
+        navbar.getChildren().add(darkToggle);
 
         mainPane.getChildren().add(navbar);
     }
@@ -281,6 +301,7 @@ public class MainApp extends Application {
                 inputEntries[i][j].setTextFormatter(textFormatter);
 
                 final int fi = i, fj = j;
+
                 inputEntries[i][j].focusedProperty().addListener((obs, oldValue, newValue) -> {
                     if (!newValue) {
                         try {
@@ -290,6 +311,7 @@ public class MainApp extends Application {
                         }
                     }
                 });
+
                 inputEntries[i][j].setOnKeyPressed(keyEvent -> {
                     if (keyEvent.getCode() == KeyCode.ESCAPE && root.getChildren().contains(prevNotification)) {
                         Animation anim = Animations.slideOutUp(prevNotification, Duration.millis(250));
@@ -301,6 +323,7 @@ public class MainApp extends Application {
                         handleCalcBtn();
                     }
                 });
+
                 pane.add(inputEntries[i][j], j, i);
             }
         }
@@ -401,8 +424,7 @@ public class MainApp extends Application {
         inputLabel.setManaged(true);
         arrowIcon.setVisible(true);
         resultsBox.setVisible(true);
-        solutionButton.setVisible(true);
-        solutionButton.setManaged(true);
+        resultsBox.setManaged(true);
 
         Animation anim1 = Animations.slideInLeft(inputBox, Duration.seconds(1));
         Animation anim2 = Animations.slideInUp(arrowIcon, Duration.seconds(1));
@@ -455,31 +477,11 @@ public class MainApp extends Application {
         }
     }
 
-    private void handleSolutionBtn() {
-        if (!inStepsView) {
-            solutionPanel.setVisible(true);
-            solutionPanel.setManaged(true);
-
-            Animation anim1 = Animations.slideInRight(solutionPanel, Duration.seconds(1));
-            anim1.playFromStart();
-
-            inStepsView = true;
-            return;
-        }
-
-        solutionPanel.setManaged(false);
-
-        Animation anim2 = Animations.slideOutRight(solutionPanel, Duration.seconds(1));
-        anim2.setOnFinished(actionEvent -> solutionPanel.setVisible(false));
-        anim2.playFromStart();
-
-        inStepsView = false;
-    }
-
     private void initButtonsArea(Pane pane) {
         Button clearButton = new Button("Clear", new FontIcon(Material2AL.CLEAR_ALL));
         clearButton.getStyleClass().addAll(Styles.DANGER,Styles.ROUNDED);
         clearButton.setOnMouseClicked(mouseEvent -> handleClearBtn());
+        clearButton.setFocusTraversable(false);
         clearButton.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.ENTER) {
                 handleClearBtn();
@@ -489,6 +491,7 @@ public class MainApp extends Application {
         Button randomBtn = new Button("Randomize", new FontIcon(Material2MZ.SWAP_CALLS));
         randomBtn.getStyleClass().addAll(Styles.ACCENT, Styles.ROUNDED);
         randomBtn.setOnMouseClicked(mouseEvent -> handleRandomBtn());
+        randomBtn.setFocusTraversable(false);
         randomBtn.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.ENTER) {
                 handleRandomBtn();
@@ -499,27 +502,19 @@ public class MainApp extends Application {
         calcButton.getStyleClass().addAll(Styles.SUCCESS, Styles.ROUNDED);
         calcButton.setDefaultButton(true);
         calcButton.setOnMouseClicked(mouseEvent -> handleCalcBtn());
+        calcButton.setFocusTraversable(false);
         calcButton.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.ENTER) {
                 handleCalcBtn();
             }
         });
 
-        solutionButton.getStyleClass().addAll(Styles.ACCENT, Styles.BUTTON_OUTLINED);
-        solutionButton.setVisible(false);
-        solutionButton.setManaged(false);
-        solutionButton.setOnMouseClicked(mouseEvent -> handleSolutionBtn());
-        solutionButton.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode() == KeyCode.ENTER) {
-                handleSolutionBtn();
-            }
-        });
-
         HBox buttonBox = new HBox();
         buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.setPadding(new Insets(0, 0, 10, 0));
         buttonBox.setSpacing(10);
 
-        buttonBox.getChildren().addAll(clearButton, randomBtn, calcButton, solutionButton);
+        buttonBox.getChildren().addAll(clearButton, randomBtn, calcButton);
         pane.getChildren().add(buttonBox);
     }
 
@@ -531,35 +526,10 @@ public class MainApp extends Application {
         initMatrixAreas(solveArea);
         initButtonsArea(solveArea);
 
-        Supplier<Node> gen = () -> {
-            var textFlow = new TextFlow(new Text("This is lorem ipsum dolor amet."));
-            textFlow.setMinHeight(100);
-            VBox.setVgrow(textFlow, Priority.ALWAYS);
-            return new VBox(textFlow);
-        };
-        TitledPane tp1 = new TitledPane("Step 1", gen.get());
-        tp1.getStyleClass().addAll(Styles.DENSE, Tweaks.ALT_ICON);
-        TitledPane tp2 = new TitledPane("Step 2", gen.get());
-        tp2.getStyleClass().addAll(Styles.DENSE, Tweaks.ALT_ICON);
-        TitledPane tp3 = new TitledPane("Step 3", gen.get());
-        tp3.getStyleClass().addAll(Styles.DENSE, Tweaks.ALT_ICON);
-
-        solutionPanel.getPanes().addAll(tp1, tp2, tp3);
-        solutionPanel.setExpandedPane(tp1);
-        solutionPanel.maxWidth(300);
-
-        solutionPanel.expandedPaneProperty().addListener((observable, oldPane, newPane) -> {
-            if (newPane == null && solutionPanel.getExpandedPane() == null) {
-                solutionPanel.setExpandedPane(oldPane);
-            } else if (newPane != null && oldPane != null) {
-                oldPane.setExpanded(false);
-            }
-        });
-
-        HBox contentHBox = new HBox();
+        contentHBox.getStyleClass().add("light");
         VBox.setVgrow(contentHBox, Priority.ALWAYS);
 
-        contentHBox.getChildren().addAll(solveArea, solutionPanel);
+        contentHBox.getChildren().add(solveArea);
         mainPane.getChildren().add(contentHBox);
     }
 
@@ -571,17 +541,19 @@ public class MainApp extends Application {
     private void initControlUI(Pane pane) {
         Label controlLabel = new Label("Dimension:");
         controlLabel.setAlignment(Pos.CENTER);
-        controlLabel.getStyleClass().add(Styles.ACCENT);
+        controlLabel.getStyleClass().add(Styles.TEXT_CAPTION);
 
         Slider sizeSlider = new Slider(2, 5, 5);
         sizeSlider.setMajorTickUnit(1);
         sizeSlider.setMinorTickCount(0);
         sizeSlider.setShowTickLabels(true);
         sizeSlider.setSnapToTicks(true);
+        sizeSlider.setFocusTraversable(false);
         sizeSlider.valueProperty().addListener((observableValue, old, value) -> resizeInputMatrix(value.intValue()));
 
         controlContainer.setAlignment(Pos.TOP_CENTER);
         controlContainer.setSpacing(10);
+        controlContainer.setPadding(new Insets(10, 0, 0, 0));
         controlContainer.getChildren().addAll(controlLabel, sizeSlider);
 
         pane.getChildren().add(controlContainer);
@@ -593,26 +565,31 @@ public class MainApp extends Application {
         Label copyrightLabel = new Label("Developed by TEA-Gang");
         copyrightLabel.getStyleClass().add(Styles.TEXT_SMALL);
 
-        HBox botSection = new HBox();
         botSection.setAlignment(Pos.CENTER_RIGHT);
         botSection.setSpacing(6);
-        botSection.setPadding(new Insets(0, 10, 10, 0));
+        botSection.setPadding(new Insets(10));
+        botSection.getStyleClass().add("light");
         botSection.getChildren().addAll(copyrightIcon, copyrightLabel);
 
         mainPane.getChildren().add(botSection);
     }
 
     private void populateMainPane() {
+        sep1.setPadding(Insets.EMPTY);
+        sep1.getStyleClass().add("sep-light");
+        sep2.setPadding(Insets.EMPTY);
+        sep2.getStyleClass().add("sep-light");
+
         initNavBar();
-        mainPane.getChildren().add(new Separator(Orientation.HORIZONTAL));
+        mainPane.getChildren().add(sep1);
         initContentArea();
-        mainPane.getChildren().add(new Separator(Orientation.HORIZONTAL));
+        mainPane.getChildren().add(sep2);
         initBotSection();
     }
 
     @Override
     public void start(Stage stage) {
-        Application.setUserAgentStylesheet(new NordDark().getUserAgentStylesheet());
+        Application.setUserAgentStylesheet(new NordLight().getUserAgentStylesheet());
 
         populateMainPane();
 
@@ -628,7 +605,7 @@ public class MainApp extends Application {
         root.getChildren().addAll(mainPane, logo, title);
 
         Scene scene = new Scene(root);
-        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/app.css")).toString());
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("css/app.css")).toExternalForm());
         scene.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.ESCAPE && root.getChildren().contains(prevNotification)) {
                 Animation anim = Animations.slideOutUp(prevNotification, Duration.millis(250));
@@ -645,8 +622,6 @@ public class MainApp extends Application {
         stage.show();
 
         inputEntries[0][0].requestFocus();
-        solutionPanel.setVisible(false);
-        solutionPanel.setManaged(false);
     }
 
     public static void main(String[] args) {
