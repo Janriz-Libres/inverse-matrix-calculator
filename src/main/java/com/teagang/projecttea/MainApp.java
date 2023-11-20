@@ -7,6 +7,7 @@ import atlantafx.base.theme.NordLight;
 import atlantafx.base.theme.Styles;
 import atlantafx.base.theme.Tweaks;
 import atlantafx.base.util.Animations;
+
 import javafx.animation.Animation;
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -22,6 +23,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+
 import org.apache.commons.math3.linear.SingularMatrixException;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.material2.Material2AL;
@@ -30,6 +32,9 @@ import org.kordamp.ikonli.material2.Material2OutlinedAL;
 
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -46,6 +51,7 @@ public class MainApp extends Application {
     private final VBox inputBox = new VBox();
     private final VBox resultsBox = new VBox();
     private final GridPane resultPane = new GridPane();
+    private final Label inputLabel = new Label();
     private final GridPane inputMatrix = new GridPane();
     private final GridPane resultMatrix = new GridPane();
 
@@ -57,7 +63,9 @@ public class MainApp extends Application {
 
     private final Random random = new Random();
     private boolean inResultsView = false, inStepsView = false;
-    int matrixSize = 5;
+    private int matrixSize = 5;
+
+    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
     private void showAlert() {
         Alert missingValuesAlert = new Alert(Alert.AlertType.ERROR);
@@ -89,6 +97,7 @@ public class MainApp extends Application {
         }
 
         try {
+            resizeMatrix(matrixSize, resultMatrix, resultFields);
             attemptSolve(data);
         } catch (SingularMatrixException e) {
             showAlert();
@@ -101,6 +110,8 @@ public class MainApp extends Application {
         if (process()) return;
 
         if (inResultsView) {
+            resizeMatrix(matrixSize, resultMatrix, resultFields);
+
             Animation anim = Animations.flash(resultMatrix);
             anim.playFromStart();
         } else {
@@ -133,6 +144,34 @@ public class MainApp extends Application {
         }
     }
 
+    private void updateUIOnClear() {
+        arrowIcon.setVisible(false);
+        arrowIcon.setManaged(false);
+
+        Animation anim1 = Animations.slideOutLeft(inputBox, Duration.millis(500));
+        anim1.playFromStart();
+
+        resultsBox.setManaged(false);
+
+        Animation anim5 = Animations.slideOutRight(resultsBox, Duration.millis(500));
+        anim5.setOnFinished(actionEvent -> {
+            changeGridConstraints(100, 0, 0);
+            resultsBox.setVisible(false);
+            inputLabel.setVisible(false);
+            inputLabel.setManaged(false);
+            inputBox.setVisible(false);
+
+            executor.schedule(() -> {
+                Animation animInner = Animations.zoomIn(inputBox, Duration.millis(400));
+                animInner.playFromStart();
+                inputBox.setVisible(true);
+            }, 100, TimeUnit.MILLISECONDS);
+        });
+        anim5.playFromStart();
+
+        solutionButton.setVisible(false);
+        solutionButton.setManaged(false);
+    }
 
     private void handleClearBtn() {
         for (TextField[] fieldList : inputEntries) {
@@ -145,34 +184,7 @@ public class MainApp extends Application {
             return;
         }
 
-        changeGridConstraints(100, 0, 0);
-
-        controlContainer.setVisible(true);
-        controlContainer.setManaged(true);
-
-        Animation anim1 = Animations.slideOutDown(arrowIcon, Duration.millis(500));
-        Animation anim2 = Animations.slideOutDown(resultsBox, Duration.millis(500));
-        Animation anim3 = Animations.slideOutRight(solutionButton, Duration.millis(500));
-        Animation anim4 = Animations.slideOutLeft(solutionPanel, Duration.seconds(1));
-        Animation anim5 = Animations.slideInDown(controlContainer, Duration.seconds(1));
-
-        anim1.setOnFinished(actionEvent -> arrowIcon.setVisible(false));
-        anim2.setOnFinished(actionEvent -> resultsBox.setVisible(false));
-        anim3.setOnFinished(actionEvent -> {
-            solutionButton.setVisible(false);
-            solutionButton.setManaged(false);
-        });
-        anim4.setOnFinished(actionEvent -> {
-            solutionPanel.setVisible(false);
-            solutionPanel.setManaged(false);
-        });
-
-        anim1.playFromStart();
-        anim2.playFromStart();
-        anim3.playFromStart();
-        anim4.playFromStart();
-        anim5.playFromStart();
-
+        updateUIOnClear();
         inResultsView = false;
         inStepsView = false;
     }
@@ -268,6 +280,7 @@ public class MainApp extends Application {
                 inputEntries[i][j] = new TextField();
                 inputEntries[i][j].setPrefHeight(200);
                 inputEntries[i][j].setAlignment(Pos.CENTER);
+                inputEntries[i][j].setPadding(new Insets(0, 10, 0, 10));
                 inputEntries[i][j].setTextFormatter(textFormatter);
 
                 final int fi = i, fj = j;
@@ -286,6 +299,10 @@ public class MainApp extends Application {
                         anim.setOnFinished(actionEvent -> root.getChildren().remove(prevNotification));
                         anim.playFromStart();
                     }
+
+                    if (keyEvent.getCode() == KeyCode.ENTER) {
+                        handleCalcBtn();
+                    }
                 });
                 pane.add(inputEntries[i][j], j, i);
             }
@@ -301,24 +318,27 @@ public class MainApp extends Application {
                 resultFields[i][j].setFocusTraversable(false);
                 resultFields[i][j].setAlignment(Pos.CENTER);
                 resultFields[i][j].setCursor(Cursor.DEFAULT);
+                resultFields[i][j].setPadding(new Insets(0, 10, 0, 10));
                 pane.add(resultFields[i][j], j, i);
             }
         }
     }
 
     private void initInputArea(GridPane pane) {
-        Label label = new Label("Input Matrix");
-        label.getStyleClass().addAll(Styles.TEXT_CAPTION, Styles.TEXT_BOLD);
+        inputLabel.setText("Input Matrix");
+        inputLabel.getStyleClass().addAll(Styles.TEXT_CAPTION, Styles.TEXT_BOLD);
+        inputLabel.setVisible(false);
+        inputLabel.setManaged(false);
 
-        inputMatrix.setMaxWidth(225);
-        inputMatrix.setMaxHeight(225);
-        inputMatrix.setMinWidth(225);
-        inputMatrix.setMinHeight(225);
+        inputMatrix.setMaxWidth(275);
+        inputMatrix.setMaxHeight(275);
+        inputMatrix.setMinWidth(275);
+        inputMatrix.setMinHeight(275);
         populateWithTextFields(inputMatrix);
 
         inputBox.setSpacing(10);
         inputBox.setAlignment(Pos.CENTER);
-        inputBox.getChildren().addAll(label, inputMatrix);
+        inputBox.getChildren().addAll(inputLabel, inputMatrix);
 
         pane.add(inputBox, 0, 0);
     }
@@ -327,10 +347,10 @@ public class MainApp extends Application {
         Label label = new Label("Inverse Matrix");
         label.getStyleClass().add(Styles.TEXT_CAPTION);
 
-        resultMatrix.setMaxWidth(225);
-        resultMatrix.setMaxHeight(225);
-        resultMatrix.setMinWidth(225);
-        resultMatrix.setMinHeight(225);
+        resultMatrix.setMaxWidth(275);
+        resultMatrix.setMaxHeight(275);
+        resultMatrix.setMinWidth(275);
+        resultMatrix.setMinHeight(275);
         genMatrixBorder(resultMatrix);
 
         resultsBox.setSpacing(10);
@@ -378,12 +398,10 @@ public class MainApp extends Application {
     }
 
     private void updateUI() {
-        resizeMatrix(matrixSize, resultMatrix, resultFields);
-
         changeGridConstraints(48, 4, 48);
 
-        controlContainer.setVisible(false);
-        controlContainer.setManaged(false);
+        inputLabel.setVisible(true);
+        inputLabel.setManaged(true);
         arrowIcon.setVisible(true);
         resultsBox.setVisible(true);
         solutionButton.setVisible(true);
@@ -463,7 +481,7 @@ public class MainApp extends Application {
 
     private void initButtonsArea(Pane pane) {
         Button clearButton = new Button("Clear", new FontIcon(Material2AL.CLEAR_ALL));
-        clearButton.getStyleClass().add(Styles.DANGER);
+        clearButton.getStyleClass().addAll(Styles.DANGER,Styles.ROUNDED);
         clearButton.setOnMouseClicked(mouseEvent -> handleClearBtn());
         clearButton.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.ENTER) {
@@ -472,7 +490,7 @@ public class MainApp extends Application {
         });
 
         Button randomBtn = new Button("Randomize", new FontIcon(Material2MZ.SWAP_CALLS));
-        randomBtn.getStyleClass().add(Styles.ACCENT);
+        randomBtn.getStyleClass().addAll(Styles.ACCENT, Styles.ROUNDED);
         randomBtn.setOnMouseClicked(mouseEvent -> handleRandomBtn());
         randomBtn.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.ENTER) {
@@ -481,7 +499,7 @@ public class MainApp extends Application {
         });
 
         Button calcButton = new Button("Calculate", new FontIcon(Material2AL.CALCULATE));
-        calcButton.getStyleClass().add(Styles.SUCCESS);
+        calcButton.getStyleClass().addAll(Styles.SUCCESS, Styles.ROUNDED);
         calcButton.setDefaultButton(true);
         calcButton.setOnMouseClicked(mouseEvent -> handleCalcBtn());
         calcButton.setOnKeyPressed(keyEvent -> {
@@ -606,7 +624,7 @@ public class MainApp extends Application {
         StackPane.setMargin(logo, new Insets(15, 0, 0, 10));
 
         Label title = new Label("Inverse Matrix Calculator");
-        title.getStyleClass().add(Styles.TITLE_2);
+        title.getStyleClass().add(Styles.TITLE_3);
         StackPane.setAlignment(title, Pos.TOP_CENTER);
         StackPane.setMargin(title, new Insets(8, 0, 0, 0));
 
@@ -624,8 +642,9 @@ public class MainApp extends Application {
 
         stage.setTitle("Inverse Matrix Calculator");
         stage.setMinWidth(900);
-        stage.setMinHeight(550);
+        stage.setMinHeight(560);
         stage.setScene(scene);
+        stage.setOnCloseRequest(windowEvent -> executor.shutdown());
         stage.show();
 
         inputEntries[0][0].requestFocus();
