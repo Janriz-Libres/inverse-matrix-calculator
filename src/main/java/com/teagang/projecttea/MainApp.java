@@ -123,12 +123,9 @@ public class MainApp extends Application {
     private void handleRandomBtn() {
         for (int i = 0; i < matrixSize; i++) {
             for (int j = 0; j < matrixSize; j++) {
-                // Generate a random number between -99 and 99
-                double value = -99 + (198 * random.nextDouble());
-
-                // Round to 2 decimal places
-                String formattedValue = String.format("%.2f", value);
-                inputEntries[i][j].setText(formattedValue);
+                // Generate a random integer between -99 and 99
+                int value = random.nextInt(-99, 101);
+                inputEntries[i][j].setText(Integer.toString(value));
             }
         }
 
