@@ -5,7 +5,6 @@ import atlantafx.base.controls.ToggleSwitch;
 import atlantafx.base.theme.NordDark;
 import atlantafx.base.theme.NordLight;
 import atlantafx.base.theme.Styles;
-import atlantafx.base.theme.Tweaks;
 import atlantafx.base.util.Animations;
 
 import javafx.animation.Animation;
@@ -14,13 +13,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -35,7 +31,6 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 public class MainApp extends Application {
@@ -191,7 +186,7 @@ public class MainApp extends Application {
         darkToggle.setSelected(false);
         darkToggle.setFocusTraversable(false);
         darkToggle.selectedProperty().addListener((obs, old, val) -> {
-            String toAdd = "", toRemove = "";
+            String toAdd, toRemove;
 
             if (val) {
                 javafx.application.Application.setUserAgentStylesheet(new NordDark().getUserAgentStylesheet());
