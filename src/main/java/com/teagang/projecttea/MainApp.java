@@ -300,7 +300,20 @@ public class MainApp extends Application {
                 inputEntries[i][j].focusedProperty().addListener((obs, oldValue, newValue) -> {
                     if (!newValue) {
                         try {
-                            Double.parseDouble(inputEntries[fi][fj].getText());
+                            String data = inputEntries[fi][fj].getText();
+                            if (!data.contains("/")) {
+                                Double.parseDouble(data);
+                                return;
+                            }
+
+                            String[] parts = data.split("/");
+
+                            if (parts.length == 2) {
+                                Double.parseDouble(parts[0]);
+                                Double.parseDouble(parts[1]);
+                            } else {
+                                throw new NumberFormatException();
+                            }
                         } catch (NumberFormatException e) {
                             inputEntries[fi][fj].setText("");
                         }

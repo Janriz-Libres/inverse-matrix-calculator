@@ -20,52 +20,55 @@ public class Solver {
 
                 String[] parts = data[i][j].split("/");
 
-                try {
-                    // Parse the numerator and denominator as doubles
-                    double numerator = Double.parseDouble(parts[0]);
-                    double denominator = Double.parseDouble(parts[1]);
+                // Parse the numerator and denominator as doubles
+                double numerator = Double.parseDouble(parts[0]);
+                double denominator = Double.parseDouble(parts[1]);
 
-                    // Perform the division
-                    result[i][j] = numerator / denominator;
-                } catch (NumberFormatException e) {
-                    System.err.println("Error parsing numerator or denominator as doubles.");
-                }
+                // Perform the division
+                result[i][j] = numerator / denominator;
             }
         }
 
         return result;
     }
 
-    private double[][] augmentMatrix(double[][] matrix) {
+    private String[][] augmentMatrix(String[][] matrix) {
         int n = matrix.length;
-        double[][] augmentedMatrix = new double[n][2 * n];
+        String[][] augmentedMatrix = new String[n][2 * n];
 
         for (int i = 0; i < n; i++) {
             System.arraycopy(matrix[i], 0, augmentedMatrix[i], 0, n);
-            augmentedMatrix[i][i + n] = 1.0; // Augment with identity matrix
+            augmentedMatrix[i][i + n] = "1"; // Augment with identity matrix
         }
 
         return augmentedMatrix;
     }
 
-    private double[][] invertMatrix(double[][] matrix) {
+    private double[][] invertMatrix(String[][] matrix) {
         int n = matrix.length;
-        double[][] augmentedMatrix = augmentMatrix(matrix);
+        String[][] augmentedMatrix = augmentMatrix(matrix);
 
         // Apply Gaussian elimination to get row-echelon form
         for (int i = 0; i < n; i++) {
             // Make the diagonal element 1
-            double diagonalElement = augmentedMatrix[i][i];
+            if (augmentedMatrix[i][i].contains("/")) {
+                String[] parts = augmentedMatrix[i][i].split("/");
+                int num = Integer.parseInt(parts[0]);
+                int den = Integer.parseInt(parts[1]);
+                Fraction fraction = new Fraction(num, den);
+            }
+
+//            double diagonalElement = augmentedMatrix[i][i];
             for (int j = 0; j < 2 * n; j++) {
-                augmentedMatrix[i][j] /= diagonalElement;
+//                augmentedMatrix[i][j] /= diagonalElement;
             }
 
             // Make the elements above and below the diagonal 0
             for (int k = 0; k < n; k++) {
                 if (k != i) {
-                    double factor = augmentedMatrix[k][i];
+//                    double factor = augmentedMatrix[k][i];
                     for (int j = 0; j < 2 * n; j++) {
-                        augmentedMatrix[k][j] -= factor * augmentedMatrix[i][j];
+//                        augmentedMatrix[k][j] -= factor * augmentedMatrix[i][j];
                     }
                 }
             }
@@ -88,7 +91,7 @@ public class Solver {
             throw new SingularMatrixException();
         }
 
-        double[][] inverse = invertMatrix(parsedData);
+        double[][] inverse = invertMatrix(data);
         String[][] result = new String[data.length][data[0].length];
 
         for (int i = 0; i < data.length; i++) {
